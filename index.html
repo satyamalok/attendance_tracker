@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Subject Attendance Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>Multi-Subject Attendance Checker</h2>
+    <input type="file" id="tsvFile" accept=".tsv">
+    <p><strong>Total Students:</strong> <span id="totalStudents">0</span></p>
+    
+    <h3>Paste Attendees for Each Subject</h3>
+    <label>Reasoning:</label>
+    <textarea id="reasoning"></textarea>
+    <label>Maths:</label>
+    <textarea id="maths"></textarea>
+    <label>English/Hindi:</label>
+    <textarea id="englishHindi"></textarea>
+    <label>Science:</label>
+    <textarea id="science"></textarea>
+    <label>SST:</label>
+    <textarea id="sst"></textarea>
+    
+    <button onclick="checkAttendance()">Check Attendance</button>
+    
+    <h3>Filter Absentees</h3>
+    <button onclick="filterResults('any_absent')">Absent in At Least One Subject</button>
+    <button onclick="filterResults('full_attendance')">Full Attendance</button>
+    <button onclick="filterResults('Maths')">Absent in Maths</button>
+    <button onclick="filterResults('English/Hindi')">Absent in English/Hindi</button>
+    <button onclick="filterResults('Science')">Absent in Science</button>
+    <button onclick="filterResults('SST')">Absent in SST</button>
+    <button onclick="filterResults('Reasoning')">Absent in Reasoning</button>
+    
+    <h3>Absentees</h3>
+    <table id="resultTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Reasoning</th>
+                <th>Maths</th>
+                <th>English/Hindi</th>
+                <th>Science</th>
+                <th>SST</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        let students = [];
+        let results = [];
+        
+        document.getElementById('tsvFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n');
+                students = lines.slice(1).map(line => {
+                    const [name, email, phone] = line.split('\t');
+                    return { name, email, phone };
+                });
+                document.getElementById('totalStudents').innerText = students.length;
+            };
+            reader.readAsText(file);
+        });
+
+        function checkAttendance() {
+            const subjects = {
+                "Reasoning": document.getElementById('reasoning').value.split('\n').map(e => e.trim()).filter(e => e),
+                "Maths": document.getElementById('maths').value.split('\n').map(e => e.trim()).filter(e => e),
+                "English/Hindi": document.getElementById('englishHindi').value.split('\n').map(e => e.trim()).filter(e => e),
+                "Science": document.getElementById('science').value.split('\n').map(e => e.trim()).filter(e => e),
+                "SST": document.getElementById('sst').value.split('\n').map(e => e.trim()).filter(e => e)
+            };
+            
+            results = students.map(student => {
+                let absences = {};
+                let absentInAny = false;
+                
+                Object.entries(subjects).forEach(([subject, attendees]) => {
+                    if (attendees.length > 0 && !attendees.includes(student.email)) {
+                        absences[subject] = subject;
+                        absentInAny = true;
+                    } else {
+                        absences[subject] = '';
+                    }
+                });
+                
+                return { ...student, ...absences, absentInAny };
+            });
+            
+            filterResults('any_absent');
+        }
+
+        function filterResults(filter) {
+            const tbody = document.getElementById('resultTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            let filteredResults = results.filter(student => {
+                if (filter === 'any_absent') return student.absentInAny;
+                if (filter === 'full_attendance') return !student.absentInAny;
+                return student[filter];
+            });
+            
+            filteredResults.forEach(student => {
+                let row = `<tr><td>${student.name}</td><td>${student.email}</td><td>${student.phone}</td>`;
+                
+                Object.keys(student).slice(3, -1).forEach(subject => {
+                    row += `<td>${student[subject]}</td>`;
+                });
+                
+                row += '</tr>';
+                tbody.innerHTML += row;
+            });
+        }
+    </script>
+</body>
+</html>
