@@ -1,131 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Subject Attendance Checker</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        textarea { width: 100%; height: 100px; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    textarea, input[type="file"] { width: 100%; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    button { margin: 5px; padding: 5px 10px; }
+  </style>
 </head>
 <body>
-    <h2>Multi-Subject Attendance Checker</h2>
-    <input type="file" id="tsvFile" accept=".tsv">
-    <p><strong>Total Students:</strong> <span id="totalStudents">0</span></p>
-    
-    <h3>Paste Attendees for Each Subject</h3>
-    <label>Reasoning:</label>
-    <textarea id="reasoning"></textarea>
-    <label>Maths:</label>
-    <textarea id="maths"></textarea>
-    <label>English/Hindi:</label>
-    <textarea id="englishHindi"></textarea>
-    <label>Science:</label>
-    <textarea id="science"></textarea>
-    <label>SST:</label>
-    <textarea id="sst"></textarea>
-    
-    <button onclick="checkAttendance()">Check Attendance</button>
-    
-    <h3>Filter Absentees</h3>
-    <button onclick="filterResults('any_absent')">Absent in At Least One Subject</button>
-    <button onclick="filterResults('full_attendance')">Full Attendance</button>
-    <button onclick="filterResults('Maths')">Absent in Maths</button>
-    <button onclick="filterResults('English/Hindi')">Absent in English/Hindi</button>
-    <button onclick="filterResults('Science')">Absent in Science</button>
-    <button onclick="filterResults('SST')">Absent in SST</button>
-    <button onclick="filterResults('Reasoning')">Absent in Reasoning</button>
-    
-    <h3>Absentees</h3>
-    <table id="resultTable">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Reasoning</th>
-                <th>Maths</th>
-                <th>English/Hindi</th>
-                <th>Science</th>
-                <th>SST</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+  <h1>Attendance Checker</h1>
 
-    <script>
-        let students = [];
-        let results = [];
-        
-        document.getElementById('tsvFile').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const lines = e.target.result.split('\n');
-                students = lines.slice(1).map(line => {
-                    const [name, email, phone] = line.split('\t');
-                    return { name, email, phone };
-                });
-                document.getElementById('totalStudents').innerText = students.length;
-            };
-            reader.readAsText(file);
+  <h3>Upload TSV File (Name, Email, Phone)</h3>
+  <input type="file" id="tsvFile" accept=".tsv" />
+  <h4>OR Paste TSV Data Below</h4>
+  <textarea id="tsvPaste" rows="5" placeholder="Paste TSV data here (Name, Email, Phone)"></textarea>
+  <button onclick="loadStudents()">Load Students</button>
+
+  <h3>Total Students: <span id="studentCount">0</span></h3>
+
+  <h3>Paste Attendance Emails by Subject</h3>
+  <textarea id="maths" rows="2" placeholder="Maths Attendance Emails"></textarea>
+  <textarea id="reasoning" rows="2" placeholder="Reasoning Attendance Emails"></textarea>
+  <textarea id="english" rows="2" placeholder="English Attendance Emails"></textarea>
+  <textarea id="hindi" rows="2" placeholder="Hindi Attendance Emails"></textarea>
+  <textarea id="spokenEnglish" rows="2" placeholder="Spoken English Attendance Emails"></textarea>
+  <textarea id="test" rows="2" placeholder="Test Attendance Emails"></textarea>
+  <textarea id="science" rows="2" placeholder="Science Attendance Emails"></textarea>
+  <textarea id="gk" rows="2" placeholder="GK Attendance Emails"></textarea>
+  <textarea id="socialStudies" rows="2" placeholder="Social Studies Attendance Emails"></textarea>
+
+  <button onclick="checkAttendance()">Check Attendance</button>
+
+  <h3>Filters</h3>
+  <button onclick="filterTable('any')">Absent in At Least One Subject</button>
+  <button onclick="filterTable('all')">Absent in All Subjects</button>
+  <button onclick="filterTable('full')">Full Attendance</button>
+  <button onclick="filterTable('Maths')">Absent in Maths</button>
+  <button onclick="filterTable('Reasoning')">Absent in Reasoning</button>
+  <button onclick="filterTable('English')">Absent in English</button>
+  <button onclick="filterTable('Hindi')">Absent in Hindi</button>
+  <button onclick="filterTable('Spoken English')">Absent in Spoken English</button>
+  <button onclick="filterTable('Test')">Absent in Test</button>
+  <button onclick="filterTable('Science')">Absent in Science</button>
+  <button onclick="filterTable('GK')">Absent in GK</button>
+  <button onclick="filterTable('Social Studies')">Absent in Social Studies</button>
+
+  <div id="output"></div>
+
+  <script>
+    let students = [];
+    let attendanceBySubject = {};
+    const subjects = [
+      { id: "maths", name: "Maths" },
+      { id: "reasoning", name: "Reasoning" },
+      { id: "english", name: "English" },
+      { id: "hindi", name: "Hindi" },
+      { id: "spokenEnglish", name: "Spoken English" },
+      { id: "test", name: "Test" },
+      { id: "science", name: "Science" },
+      { id: "gk", name: "GK" },
+      { id: "socialStudies", name: "Social Studies" },
+    ];
+
+    function loadStudents() {
+      students = [];
+      const pasted = document.getElementById("tsvPaste").value.trim();
+      if (pasted) {
+        parseTSV(pasted);
+        return;
+      }
+      const fileInput = document.getElementById("tsvFile");
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        parseTSV(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseTSV(data) {
+      const lines = data.trim().split("\n");
+      for (let line of lines) {
+        const [name, email, phone] = line.split("\t");
+        if (email) students.push({ name, email: email.trim(), phone });
+      }
+      document.getElementById("studentCount").textContent = students.length;
+    }
+
+    function checkAttendance() {
+      attendanceBySubject = {};
+      subjects.forEach(({ id, name }) => {
+        const emails = document.getElementById(id).value.trim().split(/\s+/).filter(e => e);
+        if (emails.length) {
+          attendanceBySubject[name] = new Set(emails);
+        }
+      });
+
+      let table = '<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th>';
+      const includedSubjects = Object.keys(attendanceBySubject);
+      includedSubjects.forEach(subject => {
+        table += `<th>${subject}</th>`;
+      });
+      table += '</tr></thead><tbody>';
+
+      students.forEach(s => {
+        let row = `<tr><td>${s.name}</td><td>${s.email}</td><td>${s.phone}</td>`;
+        includedSubjects.forEach(subject => {
+          row += `<td>${attendanceBySubject[subject].has(s.email) ? '' : subject}</td>`;
         });
+        row += '</tr>';
+        table += row;
+      });
 
-        function checkAttendance() {
-            const subjects = {
-                "Reasoning": document.getElementById('reasoning').value.split('\n').map(e => e.trim()).filter(e => e),
-                "Maths": document.getElementById('maths').value.split('\n').map(e => e.trim()).filter(e => e),
-                "English/Hindi": document.getElementById('englishHindi').value.split('\n').map(e => e.trim()).filter(e => e),
-                "Science": document.getElementById('science').value.split('\n').map(e => e.trim()).filter(e => e),
-                "SST": document.getElementById('sst').value.split('\n').map(e => e.trim()).filter(e => e)
-            };
-            
-            results = students.map(student => {
-                let absences = {};
-                let absentInAny = false;
-                
-                Object.entries(subjects).forEach(([subject, attendees]) => {
-                    if (attendees.length > 0 && !attendees.includes(student.email)) {
-                        absences[subject] = subject;
-                        absentInAny = true;
-                    } else {
-                        absences[subject] = '';
-                    }
-                });
-                
-                return { ...student, ...absences, absentInAny };
-            });
-            
-            filterResults('any_absent');
-        }
+      table += '</tbody></table>';
+      document.getElementById("output").innerHTML = table;
+    }
 
-        function filterResults(filter) {
-            const tbody = document.getElementById('resultTable').querySelector('tbody');
-            tbody.innerHTML = '';
-            
-            let filteredResults = results.filter(student => {
-                if (filter === 'any_absent') return student.absentInAny;
-                if (filter === 'full_attendance') return !student.absentInAny;
-                return student[filter];
-            });
-            
-            filteredResults.forEach(student => {
-                let row = `<tr><td>${student.name}</td><td>${student.email}</td><td>${student.phone}</td>`;
-                
-                Object.keys(student).slice(3, -1).forEach(subject => {
-                    row += `<td>${student[subject]}</td>`;
-                });
-                
-                row += '</tr>';
-                tbody.innerHTML += row;
-            });
-        }
-    </script>
+    function filterTable(type) {
+      const rows = document.querySelectorAll("#output tbody tr");
+      rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll("td")).slice(3);
+        const absentSubjects = cells.map((c, i) => c.textContent.trim());
+        const isAbsentInAll = absentSubjects.length && absentSubjects.every(val => val);
+        const isPresentInAll = absentSubjects.every(val => !val);
+
+        let show = false;
+        if (type === 'any') show = absentSubjects.some(val => val);
+        else if (type === 'all') show = isAbsentInAll;
+        else if (type === 'full') show = isPresentInAll;
+        else show = absentSubjects.includes(type);
+
+        row.style.display = show ? "" : "none";
+      });
+    }
+  </script>
 </body>
 </html>
