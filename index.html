@@ -5,141 +5,304 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Attendance Checker</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    textarea, input[type="file"] { width: 100%; margin: 10px 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    button { margin: 5px; padding: 5px 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f2f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      margin: auto;
+    }
+    select, input[type="date"], button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .student-list {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .student-card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .student-actions {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .student-actions button {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      border-radius: 5px;
+    }
+    .student-actions button:nth-child(2) {
+      background-color: #25d366;
+    }
+    .student-actions button:nth-child(3) {
+      background-color: #6c757d;
+    }
+    .student-actions button:nth-child(4) {
+      background-color: #ffc107;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 1);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 10px; right: 15px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .attendance-entry ul {
+      padding-left: 20px;
+    }
+    .present { color: green; }
+    .absent { color: red; }
+    #pagination {
+      text-align: center;
+      margin-top: 20px;
+    }
+    #pagination button {
+      padding: 8px 12px;
+      margin: 0 5px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <h1>Attendance Checker</h1>
+  <h1>Sales Team Attendance Checker</h1>
 
-  <h3>Upload TSV File (Name, Email, Phone)</h3>
-  <input type="file" id="tsvFile" accept=".tsv" />
-  <h4>OR Paste TSV Data Below</h4>
-  <textarea id="tsvPaste" rows="5" placeholder="Paste TSV data here (Name, Email, Phone)"></textarea>
-  <button onclick="loadStudents()">Load Students</button>
+  <div class="controls">
+    <select id="agentSelect">
+      <option value="">Select Agent</option>
+      <option>Prince Sir TL</option>
+      <option>Rupal Mam</option>
+      <option>Vishwas</option>
+      <option>Riya</option>
+      <option>Anmol</option>
+      <option>Rekha</option>
+      <option>Amit</option>
+      <option>Sonam</option>
+      <option>Rishav</option>
+      <option>Divya</option>
+      <option>Khushi</option>
+    </select>
 
-  <h3>Total Students: <span id="studentCount">0</span></h3>
+    <select id="monthSelect">
+      <option value="">Select Month</option>
+      <option>January</option>
+      <option>February</option>
+      <option>March</option>
+      <option>April</option>
+      <option>May</option>
+      <option>June</option>
+      <option>July</option>
+      <option>August</option>
+      <option>September</option>
+      <option>October</option>
+      <option>November</option>
+      <option>December</option>
+    </select>
 
-  <h3>Paste Attendance Emails by Subject</h3>
-  <textarea id="maths" rows="2" placeholder="Maths Attendance Emails"></textarea>
-  <textarea id="reasoning" rows="2" placeholder="Reasoning Attendance Emails"></textarea>
-  <textarea id="english" rows="2" placeholder="English Attendance Emails"></textarea>
-  <textarea id="hindi" rows="2" placeholder="Hindi Attendance Emails"></textarea>
-  <textarea id="spokenEnglish" rows="2" placeholder="Spoken English Attendance Emails"></textarea>
-  <textarea id="test" rows="2" placeholder="Test Attendance Emails"></textarea>
-  <textarea id="science" rows="2" placeholder="Science Attendance Emails"></textarea>
-  <textarea id="gk" rows="2" placeholder="GK Attendance Emails"></textarea>
-  <textarea id="socialStudies" rows="2" placeholder="Social Studies Attendance Emails"></textarea>
+    <input type="date" id="attendanceDate" />
 
-  <button onclick="checkAttendance()">Check Attendance</button>
+    <button onclick="loadStudents()">Load Students</button>
+    <button onclick="clearData()" style="background-color: #dc3545">Clear All Data</button>
+  </div>
 
-  <h3>Filters</h3>
-  <button onclick="filterTable('any')">Absent in At Least One Subject</button>
-  <button onclick="filterTable('all')">Absent in All Subjects</button>
-  <button onclick="filterTable('full')">Full Attendance</button>
-  <button onclick="filterTable('Maths')">Absent in Maths</button>
-  <button onclick="filterTable('Reasoning')">Absent in Reasoning</button>
-  <button onclick="filterTable('English')">Absent in English</button>
-  <button onclick="filterTable('Hindi')">Absent in Hindi</button>
-  <button onclick="filterTable('Spoken English')">Absent in Spoken English</button>
-  <button onclick="filterTable('Test')">Absent in Test</button>
-  <button onclick="filterTable('Science')">Absent in Science</button>
-  <button onclick="filterTable('GK')">Absent in GK</button>
-  <button onclick="filterTable('Social Studies')">Absent in Social Studies</button>
+  <div id="studentList" class="student-list"></div>
+  <div id="pagination"></div>
 
-  <div id="output"></div>
+  <div id="attendanceModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h3 id="modalStudentName"></h3>
+      <p id="modalDate"></p>
+      <div id="attendanceDetails" class="attendance-entry"></div>
+    </div>
+  </div>
 
-  <script>
-    let students = [];
-    let attendanceBySubject = {};
-    const subjects = [
-      { id: "maths", name: "Maths" },
-      { id: "reasoning", name: "Reasoning" },
-      { id: "english", name: "English" },
-      { id: "hindi", name: "Hindi" },
-      { id: "spokenEnglish", name: "Spoken English" },
-      { id: "test", name: "Test" },
-      { id: "science", name: "Science" },
-      { id: "gk", name: "GK" },
-      { id: "socialStudies", name: "Social Studies" },
-    ];
+ 
+<script>
+const token1 = "O38ifof-Tx81lHWUebUTEqzfbG_BXANJdZlgHDNx";
+const token2 = "wxqOYvDOPXVrHdUCG-E-6_i8yyDavyK29WmK1v7G";
+let studentData = [];
+let currentPage = 1;
+const pageSize = 20;
 
-    function loadStudents() {
-      students = [];
-      const pasted = document.getElementById("tsvPaste").value.trim();
-      if (pasted) {
-        parseTSV(pasted);
-        return;
-      }
-      const fileInput = document.getElementById("tsvFile");
-      const file = fileInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        parseTSV(e.target.result);
-      };
-      reader.readAsText(file);
-    }
+function paginateData() {
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  displayStudents(studentData.slice(start, end));
+  const totalPages = Math.ceil(studentData.length / pageSize);
+  const paginationDiv = document.getElementById("pagination");
+  paginationDiv.innerHTML = "";
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.onclick = () => { currentPage = i; paginateData(); };
+    paginationDiv.appendChild(btn);
+  }
+}
 
-    function parseTSV(data) {
-      const lines = data.trim().split("\n");
-      for (let line of lines) {
-        const [name, email, phone] = line.split("\t");
-        if (email) students.push({ name, email: email.trim(), phone });
-      }
-      document.getElementById("studentCount").textContent = students.length;
-    }
+function loadStudents() {
+  const agent = document.getElementById("agentSelect").value;
+  const date = document.getElementById("attendanceDate").value;
+  const month = document.getElementById("monthSelect").value;
+  if (!agent || !month || !date) {
+    alert("Please select agent, month and date.");
+    return;
+  }
+  const url = `https://nocodb.tsblive.in/api/v2/tables/mhgokcftvlcv91r/records?where=(Agent,eq,${encodeURIComponent(agent)})~and(Month,eq,${encodeURIComponent(month)})&sort=-Id&viewId=vwx75e305ppi10da&limit=300`;
+  fetch(url, { headers: { "xc-token": token1 } })
+    .then(res => res.json())
+    .then(data => {
+      studentData = data.list;
+      localStorage.setItem("students", JSON.stringify(studentData));
+      localStorage.setItem("agent", agent);
+      localStorage.setItem("month", month);
+      localStorage.setItem("date", date);
+      currentPage = 1;
+      paginateData();
+    });
+}
 
-    function checkAttendance() {
-      attendanceBySubject = {};
-      subjects.forEach(({ id, name }) => {
-        const emails = document.getElementById(id).value.trim().split(/\s+/).filter(e => e);
-        if (emails.length) {
-          attendanceBySubject[name] = new Set(emails);
+function displayStudents(students) {
+  const container = document.getElementById("studentList");
+  container.innerHTML = "";
+  students.forEach((s, index) => {
+    const card = document.createElement("div");
+    card.className = "student-card";
+    card.innerHTML = `
+      <strong>${index + 1 + (currentPage - 1) * pageSize}. ${s["Student Name"]}</strong><br>
+      Enrolled On: ${s["Enroll on"]} <br>
+      Course: ${s.Course} <br>
+      Price: ₹${s["Selling Price"]} <br>
+      Notes: ${s.Notes || "-"}
+      <div class="student-actions">
+        <button onclick="call('${s["Mobile 1"]}')">Call</button>
+        <button onclick="whatsapp('${s["Mobile 1"]}')">WhatsApp</button>
+        <button onclick="showDetails('${s["Mobile 2"]}', '${s["Email ID"]}')">Details</button>
+        <button onclick="getAttendance('${s["Student Name"]}', '${s["Mobile 1"]}', '${s["Email ID"]}')">Attendance</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function call(number) {
+  window.open(`tel:+91${number}`);
+}
+
+function whatsapp(number) {
+  window.open(`https://wa.me/91${number}`);
+}
+
+function showDetails(mobile2, email) {
+  alert(`Alternate Mobile: ${mobile2 || "-"}\nEmail: ${email || "-"}`);
+}
+
+function getAttendance(name, mobile, email) {
+  const date = localStorage.getItem("date");
+  fetchAttendance(name, mobile, date, false, email);
+}
+
+function fetchAttendance(name, mobileOrEmail, date, isEmail = false, fallbackEmail = null) {
+  const field = isEmail ? "Email" : "Mobile";
+  fetch(`https://nocodb.tsblive.in/api/v2/tables/mrdqr1kizuoqb85/records?where=(${field},eq,${mobileOrEmail})~and(Date,eq,exactDate,${date})`, {
+    headers: { "xc-token": token2 },
+  })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("modalStudentName").innerText = name;
+      document.getElementById("modalDate").innerText = `Date: ${date}`;
+      const detailsDiv = document.getElementById("attendanceDetails");
+      if (data.list.length === 0 && !isEmail && fallbackEmail) {
+        detailsDiv.innerHTML = `<p>Attendance not found. <a href='#' onclick=\"fetchAttendance('${name}','${fallbackEmail}','${date}',true)\">Search by Email?</a></p>`;
+      } else if (data.list.length === 0) {
+        detailsDiv.innerHTML = `<p style='color:red'>Attendance not found.</p>`;
+      } else {
+        const record = data.list[0];
+        let list = "<ul>";
+        for (let i = 1; i <= 6; i++) {
+          const subj = record[`Subject ${i}`];
+          if (subj) {
+            list += `<li class="${subj.includes("Present") ? "present" : "absent"}">${subj}</li>`;
+          }
         }
-      });
+        list += "</ul>";
+        detailsDiv.innerHTML = list;
+      }
+      document.getElementById("attendanceModal").style.display = "flex";
+    });
+}
 
-      let table = '<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th>';
-      const includedSubjects = Object.keys(attendanceBySubject);
-      includedSubjects.forEach(subject => {
-        table += `<th>${subject}</th>`;
-      });
-      table += '</tr></thead><tbody>';
+function closeModal() {
+  document.getElementById("attendanceModal").style.display = "none";
+}
 
-      students.forEach(s => {
-        let row = `<tr><td>${s.name}</td><td>${s.email}</td><td>${s.phone}</td>`;
-        includedSubjects.forEach(subject => {
-          row += `<td>${attendanceBySubject[subject].has(s.email) ? '' : subject}</td>`;
-        });
-        row += '</tr>';
-        table += row;
-      });
+function clearData() {
+  localStorage.clear();
+  location.reload();
+}
 
-      table += '</tbody></table>';
-      document.getElementById("output").innerHTML = table;
-    }
+window.onload = () => {
+  const students = JSON.parse(localStorage.getItem("students"));
+  if (students) {
+    studentData = students;
+    document.getElementById("agentSelect").value = localStorage.getItem("agent");
+    document.getElementById("monthSelect").value = localStorage.getItem("month");
+    document.getElementById("attendanceDate").value = localStorage.getItem("date");
+    paginateData();
+  }
+};
+</script>
 
-    function filterTable(type) {
-      const rows = document.querySelectorAll("#output tbody tr");
-      rows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll("td")).slice(3);
-        const absentSubjects = cells.map((c, i) => c.textContent.trim());
-        const isAbsentInAll = absentSubjects.length && absentSubjects.every(val => val);
-        const isPresentInAll = absentSubjects.every(val => !val);
-
-        let show = false;
-        if (type === 'any') show = absentSubjects.some(val => val);
-        else if (type === 'all') show = isAbsentInAll;
-        else if (type === 'full') show = isPresentInAll;
-        else show = absentSubjects.includes(type);
-
-        row.style.display = show ? "" : "none";
-      });
-    }
-  </script>
 </body>
 </html>
